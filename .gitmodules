@@ -1,0 +1,3 @@
+[submodule "ros2_video_streamer"]
+	path = ros2_video_streamer
+	url = ./ros2_video_streamer/
