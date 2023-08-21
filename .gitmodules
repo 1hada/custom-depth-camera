@@ -1,3 +1,8 @@
 [submodule "ros2_video_streamer"]
 	path = src/ros2_video_streamer
 	url = ./src/ros2_video_streamer/.git
+
+[submodule "ros2_video_streamer"]
+	path = src/ros2_video_streamer
+	url = git@github.com:ros-perception/image_pipeline.git
+	branch = humble
