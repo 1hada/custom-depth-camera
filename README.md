@@ -25,7 +25,7 @@ ffmpeg -fflags +genpts -i 2023-08-20-194610.webm -r 24 calibration-1.mp4
 https://github.com/klintan/ros2_video_streamer
 camera
 ```
-ros2 run camera_simulator camera_simulator --type video --path ~/Videos/Webcam/calibration-1.mp4 --loop # --calibration_file src/ros2_video_streamer/data/camera.yaml
+ros2 run camera_simulator camera_simulator --type images --path /home/biobe/Pictures/Webcam/calibration-images --loop # --calibration_file src/ros2_video_streamer/data/camera.yaml
 ```
 
 Calibration logic
