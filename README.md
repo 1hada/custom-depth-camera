@@ -30,7 +30,7 @@ ros2 run camera_simulator camera_simulator --type images --path /home/biobe/Pict
 
 Calibration logic
 ```
-ros2 run camera_calibration cameracalibrator --size 7x9 --square 0.02 --ros-args -r image:=/my_camera/image_raw -p camera:=/my_camera
+ros2 run camera_calibration cameracalibrator --size 7x9 --square 0.02 --ros-args -r image:=/image/image_raw -p camera:=/camera_simulator
 ```
 
 
