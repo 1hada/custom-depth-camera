@@ -1,9 +1,9 @@
 
 import numpy as np
-from sympy import symbols, Matrix
-from sympy import sin, cos, Matrix
+from sympy import symbols, Matrix, pprint, sin, cos
 from sympy.physics.vector import vlatex, vprint
 from sympy.utilities.lambdify import lambdify
+from sympy.stats import VarianceMatrix, variance, Variance
 """
 
 
@@ -123,6 +123,7 @@ def get_jacobian():
     # https://acme.byu.edu/00000179-d4cb-d26e-a37b-fffb577c0001/sympy-pdf
     #TODO get_pos_of_triangulated_points()
     theta, f, d, u1, u2, v1, v2= symbols('theta f d u1 u2 v1 v2')
+    test_dict= {theta:1, f:1, d:1, u1:1, u2:1, v1:1, v2:1}
     symbol_li = [theta, f, d, u1, u2, v1, v2]
     st = sin(theta)
     ct = cos(theta)
@@ -130,15 +131,32 @@ def get_jacobian():
     Z = -1 * (f*d*(u2-f*st-u2*ct))/denom
     Y = -1 * (d*v2*(f*d*(u1+f*st-u1*ct)))/denom
     X = (d*u1*(f*d*(u2-f*st-u2*ct)))/denom
-    M = Matrix([Z,Y,X])
-    Mj = M.jacobian(symbol_li)
-    vprint(Mj)
+    M = Matrix([X,Y,Z])
+    Mjac = M.jacobian(symbol_li)
+    # https://docs.sympy.org/latest/modules/stats.html#sympy.stats.VarianceMatrix
+    Mvar = VarianceMatrix(M)
+    # https://docs.sympy.org/latest/modules/stats.html#sympy.stats.variance
+    Xvar = Variance(X)
+    Yvar = Variance(Y)
+    Zvar = Variance(Z)
+    vprint(Mjac.shape)
+    vprint(Mvar.shape)
+    print("Variance xyz")
+    #XvarFunc = lambdify(symbol_li,Xvar)
+    #print(XvarFunc)
+    #print(XvarFunc(test_dict[theta],test_dict[f],test_dict[d],test_dict[u1],test_dict[u2],test_dict[v1],test_dict[v2]))
+    print(Xvar)# .expand()
+    print(Yvar)# .expand()
+    print(Zvar)# .expand()
     # to get values from the matrix M.subs({x:10, y: 20})
-    test_dict= {theta:1, f:1, d:1, u1:1, u2:1, v1:1, v2:1}
-    vprint(Mj.subs(test_dict))
-    Func = lambdify(symbol_li,Mj)
-    print(Func)
-    print(Func(test_dict[theta],test_dict[f],test_dict[d],test_dict[u1],test_dict[u2],test_dict[v1],test_dict[v2]))
+    #vprint(Mjac.subs(test_dict))
+    #vprint(Mvar.subs(test_dict))
+    #MjacFunc = lambdify(symbol_li,Mjac)
+    #MvarFunc = lambdify(symbol_li,Mvar)
+    #print(MjacFunc)
+    #print(MjacFunc(test_dict[theta],test_dict[f],test_dict[d],test_dict[u1],test_dict[u2],test_dict[v1],test_dict[v2]))
+    #print(MvarFunc(test_dict[theta],test_dict[f],test_dict[d],test_dict[u1],test_dict[u2],test_dict[v1],test_dict[v2]))
+
 
 def get_A(cam1 : "retinal_plane_dtype"
           ,cam2 : "retinal_plane_dtype"
