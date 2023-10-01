@@ -1,9 +1,11 @@
 
 import numpy as np
-from sympy import symbols, Matrix, pprint, sin, cos
+from sympy import sqrt as sympy_sqrt
+from sympy import symbols, simplify, Matrix, pprint, sin, cos, ConditionSet,pi, Eq, Interval,log
 from sympy.physics.vector import vlatex, vprint
 from sympy.utilities.lambdify import lambdify
-from sympy.stats import VarianceMatrix, variance, Variance
+from sympy.stats import VarianceMatrix, variance, Variance,Covariance, Expectation, Probability, Uniform
+from sympy.integrals.integrals import Integral
 """
 
 
@@ -42,7 +44,7 @@ optical_axis_dtype = np.dtype([('z', 'f4')])
 map_coordinates_dtype = np.dtype([('x', 'f4'), ('y', 'f4'), ('z', 'f4'), ('t', 'f4')])
 ccd_scaling_factors_dtype = np.dtype([('a_u', 'f4'),('a_v', 'f4')])
 principal_point_offset_dtype = np.dtype([('p_u', 'f4'),('p_v', 'f4')])
-
+DOPRINT=False
 def first_camera_matrix(homogeneous_coords: "map_coordinates_dtype", focal_length : float):
     return simple_map_to_img_plane(map_coords = homogeneous_coords, focal_length=focal_length)
 
@@ -122,8 +124,8 @@ def get_pos_of_triangulated_points(cam1 : "retinal_plane_dtype"
 def get_jacobian():
     # https://acme.byu.edu/00000179-d4cb-d26e-a37b-fffb577c0001/sympy-pdf
     #TODO get_pos_of_triangulated_points()
-    theta, f, d, u1, u2, v1, v2= symbols('theta f d u1 u2 v1 v2')
-    test_dict= {theta:1, f:1, d:1, u1:1, u2:1, v1:1, v2:1}
+    theta = symbols('theta', real=True)
+    f, d, u1, u2, v1, v2= symbols('f d u1 u2 v1 v2', real=True)
     symbol_li = [theta, f, d, u1, u2, v1, v2]
     st = sin(theta)
     ct = cos(theta)
@@ -133,21 +135,53 @@ def get_jacobian():
     X = (d*u1*(f*d*(u2-f*st-u2*ct)))/denom
     M = Matrix([X,Y,Z])
     Mjac = M.jacobian(symbol_li)
+    return Mjac
+
+def get_covariance_diag(theta=None,f=None,d=None,u1 = 0.0 ,u2 = 0.0 ,v1 = 0.0 ,v2 = 0.0 ):
     # https://docs.sympy.org/latest/modules/stats.html#sympy.stats.VarianceMatrix
-    Mvar = VarianceMatrix(M)
     # https://docs.sympy.org/latest/modules/stats.html#sympy.stats.variance
-    Xvar = Variance(X)
-    Yvar = Variance(Y)
-    Zvar = Variance(Z)
-    vprint(Mjac.shape)
-    vprint(Mvar.shape)
-    print("Variance xyz")
-    #XvarFunc = lambdify(symbol_li,Xvar)
-    #print(XvarFunc)
-    #print(XvarFunc(test_dict[theta],test_dict[f],test_dict[d],test_dict[u1],test_dict[u2],test_dict[v1],test_dict[v2]))
-    print(Xvar)# .expand()
-    print(Yvar)# .expand()
-    print(Zvar)# .expand()
+    # https://docs.sympy.org/latest/modules/sets.html#module-sympy.sets.conditionset
+    if isinstance(theta,type(None)):
+        theta = Uniform("theta",-1.7,1.7)
+    st = sin(theta)
+    ct = cos(theta)
+    if isinstance(f,type(None)):
+        f = Uniform("f",1.0,25.0) # mm
+    #f, d, u1, u2, v1, v2 = Uniform("f",0.1,1), Uniform("d",0.1,1), Uniform("u1",0,1), Uniform("u2",0,1), Uniform("v1",0,1), Uniform("v2",0,1)
+    if isinstance(d,type(None)):
+        d = Uniform("d",0.0,10000.0) # mm
+    """(
+    rather than working with
+    the CCD sensor position in pixel coordinates, a metric
+    coordinate is used here, the effect of the finite size of the pixel
+    is taken into account in the pixel uncertainty), σd=σf=24 nm,
+    σθ=0.005``, σu1=σv1 =σu2=σv2=0.68 µm.
+    """
+    #FORTESTING#u1, u2, v1, v2= symbols('u1 u2 v1 v2', real=True)
+    #FORTESTING#sub_pixel_coordinates = {u1:0, u2:0, v1:0, v2:0}
+    # Uniform("u1",0,1)
+    # Uniform("u2",0,1)
+    # Uniform("v1",0,1)
+    # Uniform("v2",0,1)
+    # https://www.amazon.com/Keyestudio-Camera-Module-Raspberry-Model/dp/B073RCXGQS/ref=pd_rhf_d_dp_s_pop_multi_srecs_sabr_cn_sccl_1_6/137-0670276-2101038?pd_rd_w=zZw5L&content-id=amzn1.sym.3691afbf-8e16-459d-afed-a0e67e4d7158&pf_rd_p=3691afbf-8e16-459d-afed-a0e67e4d7158&pf_rd_r=D2823YMD1QXP5H7T4V3X&pd_rd_wg=RzKLH&pd_rd_r=4baaf989-14e3-4732-b0ca-a3f57beca1d5&pd_rd_i=B073RCXGQS&psc=1
+    # Focal length 3.60 mm +/- 0.01 3.04 mm 
+    # https://infraredcameras.com/products/8640-s-series
+    # 8 mm Manual focus lens (80° x 60° FOV, +50 g
+    #test_dict= {theta:2, f:3.60, d:2}
+    denom = (u1*u2+f**2)*st + f*(u2-u1)*ct
+    Xu = (d*u1*(f*d*(u2-f*st-u2*ct)))/denom
+    Yu = -1 * (d*v2*(f*d*(u1+f*st-u1*ct)))/denom
+    Zu = -1 * (f*d*(u2-f*st-u2*ct))/denom
+    if DOPRINT: print("Starting variance calculations")
+    Xvar = variance(Xu) #,condition=ConditionSet(theta, Eq(0, pi), Interval(0, 2*pi)))
+    if DOPRINT: print("X individual variance calculated")
+    Yvar = variance(Yu) #Integral(Y,(theta,0,1), (f,0,1), (d,0,1), (u1,0,1), (u2,0,1), (v1,0,1), (v2,0,1)))
+    if DOPRINT: print("Y individual variance calculated")
+    Zvar = variance(Zu) #Integral(Z,(theta,0,1), (f,0,1), (d,0,1), (u1,0,1), (u2,0,1), (v1,0,1), (v2,0,1)))
+    if DOPRINT: print("Z individual variance calculated")
+    if DOPRINT: print("Xvar... -- ",Xvar)#.subs(test_dict).evalf())
+    if DOPRINT: print("Yvar... -- ",Yvar.expand())
+    if DOPRINT: print("Zvar... -- ",Zvar.expand())# .expand()
     # to get values from the matrix M.subs({x:10, y: 20})
     #vprint(Mjac.subs(test_dict))
     #vprint(Mvar.subs(test_dict))
@@ -156,6 +190,10 @@ def get_jacobian():
     #print(MjacFunc)
     #print(MjacFunc(test_dict[theta],test_dict[f],test_dict[d],test_dict[u1],test_dict[u2],test_dict[v1],test_dict[v2]))
     #print(MvarFunc(test_dict[theta],test_dict[f],test_dict[d],test_dict[u1],test_dict[u2],test_dict[v1],test_dict[v2]))
+    M = Matrix([[Xvar,0.0,0.0]
+               ,[0.0,Yvar,0.0]
+               ,[0.0,0.0,Zvar]])
+    return M
 
 
 def get_A(cam1 : "retinal_plane_dtype"
@@ -219,6 +257,88 @@ The nonlinear effect of lens distortion is ignored. For the ideal accuracy, it w
 """
 
 
-
+import matplotlib.pyplot as plt
 if __name__ == "__main__":
-    get_jacobian()
+    """
+    theta = Uniform("theta",0,1)
+    f = Uniform("f",0,1)
+    d = Uniform("d",0.0,10.0)
+    u1 = 0.0 # Uniform("u1",0,1)
+    u2 = 0.0 # Uniform("u2",0,1)
+    v1 = 0.0 # Uniform("v1",0,1)
+    v2 = 0.0 # Uniform("v2",0,1)
+
+    """
+    theta = symbols('theta', real=True)
+    f, d, u1, u2, v1, v2= symbols('f d u1 u2 v1 v2', real=True)
+    # Some values
+    THETA_TO_RAD=np.pi/180
+    THETA_DEG_LI = np.arange(-180,360,1)
+    FOCALLENGTH_MM=3.60 # 8.0 # in mm
+    MM_to_M = 1/1000.0
+    DISTANCE_MM=6000 # in mm 
+    U1_PIX = 0
+    U2_PIX = 0
+    V1_PIX = 0
+    V2_PIX = 0
+    U1_VAR = 0.68
+    U2_VAR = 0.68
+    V1_VAR = 0.68
+    V2_VAR = 0.68
+    # (d=400 mm, f=25 mm, u1=u2=v1=v2=0 µm, σd=σf=24*1e-6 , σθ=0.005``, σu1=σv1=σu2 =σv2=0.68 µm)
+    THETA_TO_RAD=np.pi/180
+    THETA_DEG_LI = np.arange(-180,360,1)
+    FOCALLENGTH_MM=25
+    MM_to_M = 1/1000.0
+    DISTANCE_MM=400 # in mm 
+    U1_PIX = 0
+    U2_PIX = 0
+    V1_PIX = 0
+    V2_PIX = 0
+    U1_VAR = 0.68
+    U2_VAR = 0.68
+    V1_VAR = 0.68
+    V2_VAR = 0.68
+    print(get_jacobian().T.shape)
+    print(get_jacobian().shape)
+    print(get_covariance_diag().shape)
+    print("Covariance Diag : ")
+    print(get_covariance_diag(theta=1,f=FOCALLENGTH_MM,u1 = U1_VAR ,u2 = U2_VAR ,v1 = V1_VAR ,v2 = V2_VAR ))
+    error_li=[]
+    for THETA_DEG in THETA_DEG_LI:
+        THETA_RAD=THETA_DEG*THETA_TO_RAD
+        # note jacobian order is symbol_li = [theta, f, d, u1, u2, v1, v2]
+        sub_dict={f:FOCALLENGTH_MM,theta: THETA_RAD, d:DISTANCE_MM,u1:U1_PIX, u2:U2_PIX, v1:V1_PIX, v2:V2_PIX}
+        print("About to get Val")
+        xyz_var_matrix = get_covariance_diag(theta= THETA_RAD,f=FOCALLENGTH_MM, u1 = U1_VAR ,u2 = U2_VAR ,v1 = V1_VAR ,v2 = V2_VAR )
+        use_error_matrix = False
+        print("xyz_var_matrix.det()",xyz_var_matrix.det())
+        if use_error_matrix:
+            pprint(xyz_var_matrix)
+            val = get_jacobian().T*xyz_var_matrix*get_jacobian()
+            print("))))-------------------")
+            val = val.evalf(subs=sub_dict)
+            print("))))0")
+            #pprint(val)
+            theta = Uniform("theta",0,1)
+            f = Uniform("f",0,1)
+            d = Uniform("d",0.0,10.0)
+            sub_dict={f:FOCALLENGTH_MM,theta: THETA_RAD, d:DISTANCE_MM,u1:U1_PIX, u2:U2_PIX, v1:V1_PIX, v2:V2_PIX}
+            val = val.subs(sub_dict)
+            print("A")
+            #pprint(val)
+            val = val.evalf(subs=sub_dict)
+            print("B")
+            theta = symbols('theta', real=True)
+            f, d, u1, u2, v1, v2= symbols('f d u1 u2 v1 v2', real=True)
+            sub_dict={f:FOCALLENGTH_MM,theta: THETA_RAD, d:DISTANCE_MM,u1:U1_PIX, u2:U2_PIX, v1:V1_PIX, v2:V2_PIX}
+            val = val.evalf(subs=sub_dict)
+            print("C")
+            #pprint(val.evalf(subs=sub_dict))
+            #pprint(val.evalf(subs=sub_dict))
+            #pprint(val)
+            #print(val.eigenvals())
+            #print(val.det())
+        error_li.append(sympy_sqrt(pow(xyz_var_matrix[0,0],2)+pow(xyz_var_matrix[1,1],2)+pow(xyz_var_matrix[2,2],2)))
+    plt.plot(THETA_DEG_LI, error_li)
+    plt.show()

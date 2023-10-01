@@ -24,8 +24,10 @@ ffmpeg -fflags +genpts -i 2023-08-20-194610.webm -r 24 calibration-1.mp4
 
 https://github.com/klintan/ros2_video_streamer
 camera
+
 ```
 ros2 run camera_simulator camera_simulator --type images --path /home/biobe/Pictures/Webcam/calibration-images --loop # --calibration_file src/ros2_video_streamer/data/camera.yaml
+ros2 run camera_simulator camera_simulator --type video --path /home/biobe/Videos/Webcam/calibration-video-1.mp4 --loop # --calibration_file src/ros2_video_streamer/data/camera.yaml
 ```
 
 Calibration logic
@@ -50,4 +52,12 @@ sudo apt install ros-humble-launch-testing-ament-cmake
 cd src
 git clone -b humble git@github.com:ros-perception/image_pipeline.git
 
+```
+
+
+# Stereo camera tuning
+http://wiki.ros.org/camera_calibration/Tutorials/StereoCalibration
+
+```
+rosrun camera_calibration cameracalibrator.py --approximate 0.1 --size 8x6 --square 0.108 right:=/my_stereo/right/image_raw left:=/my_stereo/left/image_raw right_camera:=/my_stereo/right left_camera:=/my_stereo/left
 ```
