@@ -61,3 +61,12 @@ http://wiki.ros.org/camera_calibration/Tutorials/StereoCalibration
 ```
 rosrun camera_calibration cameracalibrator.py --approximate 0.1 --size 8x6 --square 0.108 right:=/my_stereo/right/image_raw left:=/my_stereo/left/image_raw right_camera:=/my_stereo/right left_camera:=/my_stereo/left
 ```
+
+
+
+
+# Results 
+Results from testing the errors at lengths which are more appropriate for human sized robots increases exponentially near the edges, indicating that the main error is associated with the quantization error rather than the angles of the cameras. This again is assuming a zero centerd model.
+
+If we continued the 0,0 point in the image place to be the center. The next QUESTION IN REDUCING THE DEPTH ERROR OF STEREOSCOPIC RESOLUTION IN HUMAN SIZED ROBOTS  is , can we reduce the errors associated with image reconstruction by using weighted averages of quantized images. Thus if the quatized image has a largely different depth value for its distaprity image, then the hypotheses to test will be if the accuracy of depth improves in conditions with repeating patterns, TODO any other errors that plaque stereo cameras and can be solved with weighted averaged distarities.
+

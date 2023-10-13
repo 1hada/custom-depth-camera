@@ -187,7 +187,7 @@ def get_covariance_diag(theta=None,f=None,d=None,u1 = 0.0 ,u2 = 0.0 ,v1 = 0.0 ,v
     if DOPRINT: print("Yvarnumerator... -- ",variance(-1 * (d*v2*(f*d*(u1+f*st-u1*ct)))))# .expand()
     if DOPRINT: print("Zvarnumerator... -- ",variance(-1 * (f*d*(u2-f*st-u2*ct))))# .expand()
     if DOPRINT: print("(u2-f*st-u2*ct)... -- ",(u2-f*st-u2*ct))# .expand()
-    if DOPRINT: print("var(u2-f*st-u2*ct)... -- ",variance((u2-f*st-u2*ct)))# .expand()
+    if DOPRINT: print("var(u2-f*st-u2*ct)... -- ",variance((u2-f*st-u2*ct)))
     # https://statproofbook.github.io/P/var-lincomb.html
     # https://stats.stackexchange.com/questions/231868/relation-between-covariance-matrix-and-jacobian-in-nonlinear-least-squares
     if DOPRINT: print("Xu... -- ",Xu)# .expand()
@@ -266,63 +266,43 @@ The nonlinear effect of lens distortion is ignored. For the ideal accuracy, it w
 
 
 """
-
-
-import matplotlib.pyplot as plt
-if __name__ == "__main__":
-    """
-    theta = Uniform("theta",0,1)
-    f = Uniform("f",0,1)
-    d = Uniform("d",0.0,10.0)
-    u1 = 0.0 # Uniform("u1",0,1)
-    u2 = 0.0 # Uniform("u2",0,1)
-    v1 = 0.0 # Uniform("v1",0,1)
-    v2 = 0.0 # Uniform("v2",0,1)
-
-    """
+def calculate_by_theta(DEG_TO_RAD
+                        ,THETA_DEG_LI
+                        ,FOCALLENGTH_MM
+                        ,MM_to_M
+                        ,DISTANCE_MM
+                        ,DISTANCE_VAR
+                        ,U1_PIX
+                        ,U2_PIX
+                        ,V1_PIX
+                        ,V2_PIX
+                        ,U1_VAR
+                        ,U2_VAR
+                        ,V1_VAR
+                        ,V2_VAR):
     theta = symbols('theta', real=True)
     f, d, u1, u2, v1, v2= symbols('f d u1 u2 v1 v2', real=True)
-    # Some values
-    DEG_TO_RAD=np.pi/180
-    THETA_DEG_LI = np.arange(-90,180,1)
-    FOCALLENGTH_MM=25##3.60 # 8.0 # in mm
-    MM_to_M = 1/1000.0
-    DISTANCE_MM=400 #6000 # in mm 
-    U1_PIX = 0
-    U2_PIX = 0
-    V1_PIX = 0
-    V2_PIX = 0
-    U1_VAR = 0.68
-    U2_VAR = 0.68
-    V1_VAR = 0.68
-    V2_VAR = 0.68
-    # (d=400 mm, f=25 mm, u1=u2=v1=v2=0 µm, σd=σf=24*1e-6 , σθ=0.005``, σu1=σv1=σu2 =σv2=0.68 µm)
-    JAC = get_jacobian()
-    print(JAC.T.shape)
-    print(JAC.shape)
-    print(get_covariance_diag().shape)
-    error_li=[]
     for THETA_DEG in THETA_DEG_LI:
         THETA_RAD=THETA_DEG*DEG_TO_RAD
         # note jacobian order is symbol_li = [theta, f, d, u1, u2, v1, v2]
         sub_dict={f:FOCALLENGTH_MM,theta: THETA_RAD, d:DISTANCE_MM,u1:U1_PIX, u2:U2_PIX, v1:V1_PIX, v2:V2_PIX}
-        JAC_vals = JAC.subs(sub_dict)
-        pprint(JAC_vals)
+        #JAC_vals = JAC.subs(sub_dict)
+        #pprint(JAC_vals)
         print("About to get Val")
         variance_subs = dict(
-            theta=THETA_RAD
-                            ,f=FOCALLENGTH_MM
-                            ,d=DISTANCE_MM
-                            ,u1 = U1_PIX#VAR 
-                            ,u2 = U2_PIX#VAR 
-                            ,v1 = V1_PIX#VAR 
-                            ,v2 = V2_PIX#VAR
+            #theta=THETA_RAD
+                            f=FOCALLENGTH_MM
+                            ,d=DISTANCE_VAR#DISTANCE_MM
+                            ,u1 = U1_VAR#U1_PIX#VAR 
+                            ,u2 = U2_VAR#U2_PIX#VAR 
+                            ,v1 = V1_VAR#V1_PIX#VAR 
+                            ,v2 = V2_VAR#V2_PIX#VAR
                             )
-        xyz_var_matrix = get_covariance_diag()#**variance_subs)
+        xyz_var_matrix = get_covariance_diag(**variance_subs)
         use_error_matrix = False
         print("Covariance Diag : ")
         pprint(xyz_var_matrix)
-        print("xyz_var_matrix.det()",xyz_var_matrix.det())
+        #print("xyz_var_matrix.det()",xyz_var_matrix.det())
         if use_error_matrix:
             pprint(xyz_var_matrix)
             val = JAC_vals.T*xyz_var_matrix*JAC_vals
@@ -351,5 +331,46 @@ if __name__ == "__main__":
             #print(val.eigenvals())
             #print(val.det())
         error_li.append(sympy_sqrt(pow(xyz_var_matrix[0,0],2)+pow(xyz_var_matrix[1,1],2)+pow(xyz_var_matrix[2,2],2)))
-    plt.plot(THETA_DEG_LI, error_li)
+    return error_li
+
+import matplotlib.pyplot as plt
+if __name__ == "__main__":
+    """
+    theta = Uniform("theta",0,1)
+    f = Uniform("f",0,1)
+    d = Uniform("d",0.0,10.0)
+    u1 = 0.0 # Uniform("u1",0,1)
+    u2 = 0.0 # Uniform("u2",0,1)
+    v1 = 0.0 # Uniform("v1",0,1)
+    v2 = 0.0 # Uniform("v2",0,1)
+
+    """
+    theta = symbols('theta', real=True)
+    f, d, u1, u2, v1, v2= symbols('f d u1 u2 v1 v2', real=True)
+    # Some values
+    data = dict(
+        DEG_TO_RAD=np.pi/180
+        ,THETA_DEG_LI = np.arange(-90,180,90)
+        ,FOCALLENGTH_MM=25##3.60 # 8.0 # in mm
+        ,MM_to_M = 1/1000.0
+        ,DISTANCE_MM=400 #6000 # in mm 
+        ,DISTANCE_VAR=2.4e-5
+        ,U1_PIX = 0
+        ,U2_PIX = 0
+        ,V1_PIX = 0
+        ,V2_PIX = 0
+        ,U1_VAR = 0.68
+        ,U2_VAR = 0.68
+        ,V1_VAR = 0.68
+        ,V2_VAR = 0.68
+        )
+    # (d=400 mm, f=25 mm, u1=u2=v1=v2=0 µm, σd=σf=24*1e-6 , σθ=0.005``, σu1=σv1=σu2 =σv2=0.68 µm)
+    #JAC = get_jacobian()
+    #print(JAC.T.shape)
+    #print(JAC.shape)
+    #print(get_covariance_diag().shape)
+    error_li=[]
+    error_li = calculate_by_theta(**data)
+    plt.plot(data["THETA_DEG_LI"], error_li)
+    plt.savefig("save_err_plot.png")
     plt.show()
