@@ -44,7 +44,7 @@ optical_axis_dtype = np.dtype([('z', 'f4')])
 map_coordinates_dtype = np.dtype([('x', 'f4'), ('y', 'f4'), ('z', 'f4'), ('t', 'f4')])
 ccd_scaling_factors_dtype = np.dtype([('a_u', 'f4'),('a_v', 'f4')])
 principal_point_offset_dtype = np.dtype([('p_u', 'f4'),('p_v', 'f4')])
-DOPRINT=False
+DOPRINT=True
 def first_camera_matrix(homogeneous_coords: "map_coordinates_dtype", focal_length : float):
     return simple_map_to_img_plane(map_coords = homogeneous_coords, focal_length=focal_length)
 
@@ -133,7 +133,7 @@ def get_jacobian():
     Z = -1 * (f*d*(u2-f*st-u2*ct))/denom
     Y = -1 * (d*v2*(f*d*(u1+f*st-u1*ct)))/denom
     X = (d*u1*(f*d*(u2-f*st-u2*ct)))/denom
-    M = Matrix([X,Y,Z])
+    M = Matrix([[X],[Y],[Z]])
     Mjac = M.jacobian(symbol_li)
     return Mjac
 
@@ -142,14 +142,14 @@ def get_covariance_diag(theta=None,f=None,d=None,u1 = 0.0 ,u2 = 0.0 ,v1 = 0.0 ,v
     # https://docs.sympy.org/latest/modules/stats.html#sympy.stats.variance
     # https://docs.sympy.org/latest/modules/sets.html#module-sympy.sets.conditionset
     if isinstance(theta,type(None)):
-        theta = Uniform("theta",-1.7,1.7)
+        theta = Uniform("theta",-0.1,3.14)
     st = sin(theta)
     ct = cos(theta)
     if isinstance(f,type(None)):
         f = Uniform("f",1.0,25.0) # mm
     #f, d, u1, u2, v1, v2 = Uniform("f",0.1,1), Uniform("d",0.1,1), Uniform("u1",0,1), Uniform("u2",0,1), Uniform("v1",0,1), Uniform("v2",0,1)
     if isinstance(d,type(None)):
-        d = Uniform("d",0.0,10000.0) # mm
+        d = Uniform("d",0.0,400.0) # mm
     """(
     rather than working with
     the CCD sensor position in pixel coordinates, a metric
@@ -181,7 +181,18 @@ def get_covariance_diag(theta=None,f=None,d=None,u1 = 0.0 ,u2 = 0.0 ,v1 = 0.0 ,v
     if DOPRINT: print("Z individual variance calculated")
     if DOPRINT: print("Xvar... -- ",Xvar)#.subs(test_dict).evalf())
     if DOPRINT: print("Yvar... -- ",Yvar.expand())
-    if DOPRINT: print("Zvar... -- ",Zvar.expand())# .expand()
+    if DOPRINT: print("Zvar... -- ",Zvar)# .expand()
+    if DOPRINT: print("denom... -- ",variance(denom))# .expand()
+    if DOPRINT: print("Xvarnumerator... -- ",variance((d*u1*(f*d*(u2-f*st-u2*ct)))))# .expand()
+    if DOPRINT: print("Yvarnumerator... -- ",variance(-1 * (d*v2*(f*d*(u1+f*st-u1*ct)))))# .expand()
+    if DOPRINT: print("Zvarnumerator... -- ",variance(-1 * (f*d*(u2-f*st-u2*ct))))# .expand()
+    if DOPRINT: print("(u2-f*st-u2*ct)... -- ",(u2-f*st-u2*ct))# .expand()
+    if DOPRINT: print("var(u2-f*st-u2*ct)... -- ",variance((u2-f*st-u2*ct)))# .expand()
+    # https://statproofbook.github.io/P/var-lincomb.html
+    # https://stats.stackexchange.com/questions/231868/relation-between-covariance-matrix-and-jacobian-in-nonlinear-least-squares
+    if DOPRINT: print("Xu... -- ",Xu)# .expand()
+    if DOPRINT: print("Yu... -- ",Yu)# .expand()
+    if DOPRINT: print("Zu... -- ",Zu)# .expand()
     # to get values from the matrix M.subs({x:10, y: 20})
     #vprint(Mjac.subs(test_dict))
     #vprint(Mvar.subs(test_dict))
@@ -272,11 +283,11 @@ if __name__ == "__main__":
     theta = symbols('theta', real=True)
     f, d, u1, u2, v1, v2= symbols('f d u1 u2 v1 v2', real=True)
     # Some values
-    THETA_TO_RAD=np.pi/180
-    THETA_DEG_LI = np.arange(-180,360,1)
-    FOCALLENGTH_MM=3.60 # 8.0 # in mm
+    DEG_TO_RAD=np.pi/180
+    THETA_DEG_LI = np.arange(-90,180,1)
+    FOCALLENGTH_MM=25##3.60 # 8.0 # in mm
     MM_to_M = 1/1000.0
-    DISTANCE_MM=6000 # in mm 
+    DISTANCE_MM=400 #6000 # in mm 
     U1_PIX = 0
     U2_PIX = 0
     V1_PIX = 0
@@ -286,36 +297,35 @@ if __name__ == "__main__":
     V1_VAR = 0.68
     V2_VAR = 0.68
     # (d=400 mm, f=25 mm, u1=u2=v1=v2=0 µm, σd=σf=24*1e-6 , σθ=0.005``, σu1=σv1=σu2 =σv2=0.68 µm)
-    THETA_TO_RAD=np.pi/180
-    THETA_DEG_LI = np.arange(-180,360,1)
-    FOCALLENGTH_MM=25
-    MM_to_M = 1/1000.0
-    DISTANCE_MM=400 # in mm 
-    U1_PIX = 0
-    U2_PIX = 0
-    V1_PIX = 0
-    V2_PIX = 0
-    U1_VAR = 0.68
-    U2_VAR = 0.68
-    V1_VAR = 0.68
-    V2_VAR = 0.68
-    print(get_jacobian().T.shape)
-    print(get_jacobian().shape)
+    JAC = get_jacobian()
+    print(JAC.T.shape)
+    print(JAC.shape)
     print(get_covariance_diag().shape)
-    print("Covariance Diag : ")
-    print(get_covariance_diag(theta=1,f=FOCALLENGTH_MM,u1 = U1_VAR ,u2 = U2_VAR ,v1 = V1_VAR ,v2 = V2_VAR ))
     error_li=[]
     for THETA_DEG in THETA_DEG_LI:
-        THETA_RAD=THETA_DEG*THETA_TO_RAD
+        THETA_RAD=THETA_DEG*DEG_TO_RAD
         # note jacobian order is symbol_li = [theta, f, d, u1, u2, v1, v2]
         sub_dict={f:FOCALLENGTH_MM,theta: THETA_RAD, d:DISTANCE_MM,u1:U1_PIX, u2:U2_PIX, v1:V1_PIX, v2:V2_PIX}
+        JAC_vals = JAC.subs(sub_dict)
+        pprint(JAC_vals)
         print("About to get Val")
-        xyz_var_matrix = get_covariance_diag(theta= THETA_RAD,f=FOCALLENGTH_MM, u1 = U1_VAR ,u2 = U2_VAR ,v1 = V1_VAR ,v2 = V2_VAR )
+        variance_subs = dict(
+            theta=THETA_RAD
+                            ,f=FOCALLENGTH_MM
+                            ,d=DISTANCE_MM
+                            ,u1 = U1_PIX#VAR 
+                            ,u2 = U2_PIX#VAR 
+                            ,v1 = V1_PIX#VAR 
+                            ,v2 = V2_PIX#VAR
+                            )
+        xyz_var_matrix = get_covariance_diag()#**variance_subs)
         use_error_matrix = False
+        print("Covariance Diag : ")
+        pprint(xyz_var_matrix)
         print("xyz_var_matrix.det()",xyz_var_matrix.det())
         if use_error_matrix:
             pprint(xyz_var_matrix)
-            val = get_jacobian().T*xyz_var_matrix*get_jacobian()
+            val = JAC_vals.T*xyz_var_matrix*JAC_vals
             print("))))-------------------")
             val = val.evalf(subs=sub_dict)
             print("))))0")
@@ -333,7 +343,8 @@ if __name__ == "__main__":
             f, d, u1, u2, v1, v2= symbols('f d u1 u2 v1 v2', real=True)
             sub_dict={f:FOCALLENGTH_MM,theta: THETA_RAD, d:DISTANCE_MM,u1:U1_PIX, u2:U2_PIX, v1:V1_PIX, v2:V2_PIX}
             val = val.evalf(subs=sub_dict)
-            print("C")
+            print("val")
+            pprint(val)
             #pprint(val.evalf(subs=sub_dict))
             #pprint(val.evalf(subs=sub_dict))
             #pprint(val)
