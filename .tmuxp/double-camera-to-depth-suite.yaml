@@ -1,0 +1,38 @@
+#sudo apt install tmuxp
+session_name: pane-split
+windows:
+  - window_name: dev window
+    layout: tiled
+    shell_command_before:
+        #- conda deactivate
+        - cd ~/workspace/custom-depth-camera
+        - source /opt/ros/humble/setup.bash
+        - source install/setup.bash
+    panes:
+      # component_container-1] [ERROR] [1703830074.490414152] [camera_ur.rectify_color_node]: Rectified topic '/camera_ur/image_rect' requested but camera publishing '/camera_ur/camera_info' is uncalibrated
+      - DEV_NAME=camera_ul && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME)  --param camera_info_url:=$HOME/.ros/camera_info/$DEV_NAME.yaml --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
+      - DEV_NAME=camera_ur && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME)  --param camera_info_url:=$HOME/.ros/camera_info/$DEV_NAME.yaml --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
+      - DEV_NAME=camera_ll && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME)  --param camera_info_url:=$HOME/.ros/camera_info/$DEV_NAME.yaml --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
+      - DEV_NAME=camera_lr && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME)  --param camera_info_url:=$HOME/.ros/camera_info/$DEV_NAME.yaml --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
+      - ros2 run tf2_ros static_transform_publisher  0 0 4  0 1.5708 1.5708  camera_frame  test_child_frame_id
+      - ros2 run tf2_ros static_transform_publisher  0 0 0.000 0.0 0.0 0.0  map  camera_frame # it is the left camera because that is from where the calibration data starts from (it is the right cameras matrices that require homogeneous transform)
+      - ros2 run tf2_ros static_transform_publisher  0 0 0.025 0.0 0.0 0.0  camera_frame  top_camera_frame_id # it is the left camera because that is from where the calibration data starts from (it is the right cameras matrices that require homogeneous transform)
+      - ros2 run tf2_ros static_transform_publisher  0 0 0.000 0.0 0.0 0.0  camera_frame  bot_camera_frame_id # it is the left camera because that is from where the calibration data starts from (it is the right cameras matrices that require homogeneous transform)
+      # 0.6 degrees == 0.010472 radians ( inwards)
+      # the top cameras are translated 25mm above the bottoms
+      # we have 2 baselines 82 mm and 56 mm
+      - ros2 run tf2_ros static_transform_publisher  0 0.0 0.0  0 0.0 -0.010472  top_camera_frame_id  camera_ul_frame_id
+      - ros2 run tf2_ros static_transform_publisher  0 0.082 0.0  0 0.0 0.010472  camera_ul_frame_id  camera_ur_frame_id
+      - ros2 run tf2_ros static_transform_publisher  0 0.0 0.0  0 0.0 -0.000000  bot_camera_frame_id  camera_ll_frame_id
+      - ros2 run tf2_ros static_transform_publisher  0 0.082 0.0  0 0.0 0.000000  camera_ll_frame_id  camera_lr_frame_id
+      # http://wiki.ros.org/stereo_image_proc min_disparity:=0 prefilter_cap:=5 prefilter_size:=10 speckle_range:=31 speckle_size:=35 stereo_algorithm:=1 texture_threshold:=100 uniqueness_ratio:=10.0
+      - ros2 launch stereo_image_proc stereo_image_proc.launch.py left_namespace:=/camera_ul right_namespace:=/camera_ur approximate_sync:=True stereo_algorithm:=1
+      - ros2 launch stereo_image_proc stereo_image_proc.launch.py left_namespace:=/camera_ll right_namespace:=/camera_lr approximate_sync:=True stereo_algorithm:=1
+      #- ros2 launch depth_image_proc stereo_image_proc.launch.py  approximate_sync:=True avoid_point_cloud_padding:=True
+#      - ros2 run stereo_image_proc disparity_node --ros-args --params-file $HOME/.ros/camera_info/disparity-params.yaml
+#      - ros2 run stereo_image_proc point_cloud_node  --ros-args --remap left/image_rect_color:=left/image_rect --param approximate_sync:=True --param approximate:=1.0 --param avoid_point_cloud_padding:=True
+      - rviz2
+      - sleep 2 & ros2 topic list
+      - ros2 topic echo --no-arr /camera_ll/image_raw
+      - ros2 run rqt_reconfigure rqt_reconfigure
+      - ros2 run image_view disparity_view --ros-args --remap image:=/disparity --remap __ns:=/camera_ll

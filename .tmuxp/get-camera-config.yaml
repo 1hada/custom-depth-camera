@@ -1,0 +1,16 @@
+#sudo apt install tmuxp
+session_name: pane-split
+windows:
+  - window_name: dev window
+    layout: tiled
+    shell_command_before:
+        #- conda deactivate
+        - cd ~/workspace/custom-depth-camera
+        - source /opt/ros/humble/setup.bash
+        - source install/setup.bash
+    panes:
+      - DEV_NAME=camera_ll && CAMERA_ID=left && ros2 run opencv_cam opencv_cam_main  --ros-args --param file:=true --param filename:=/dev/$DEV_NAME  --remap __ns:=/$CAMERA_ID --param camera_frame_id:=$CAMERA_ID'_frame_id' #  --param camera_info_path:=$HOME/.ros/camera_info/$CAMERA_ID.yaml
+      - DEV_NAME=camera_lr && CAMERA_ID=right && ros2 run opencv_cam opencv_cam_main  --ros-args --param file:=true --param filename:=/dev/$DEV_NAME --remap __ns:=/$CAMERA_ID --param camera_frame_id:=$CAMERA_ID'_frame_id' #   --param camera_info_path:=$HOME/.ros/camera_info/$CAMERA_ID.yaml
+      - rviz2
+      - sleep 2 & ros2 topic list
+      - ros2 run camera_calibration cameracalibrator --no-service-check --size 12x8 --square 0.028 --approximate=2.0 --ros-args -r left:=/left/image_raw -r right:=/right/image_raw  
