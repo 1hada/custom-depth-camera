@@ -8,12 +8,13 @@ windows:
         - cd ~/workspace/custom-depth-camera
         - source /opt/ros/humble/setup.bash
         - source install/setup.bash
+        - export DISPARITY_PARAMS="P1:=200.0 P2:=400.0 approximate_sync:=true correlation_window_size:=25 disp12_max_diff:=0 disparity_range:=64 full_dp:=false min_disparity:=0 prefilter_cap:=63 prefilter_size:=9 queue_size:=5 speckle_range:=4 speckle_size:=600 stereo_algorithm:=0 texture_threshold:=100 uniqueness_ratio:=10.0 use_sim_time:=false use_system_default_qos:=false"
     panes:
       # component_container-1] [ERROR] [1703830074.490414152] [camera_ur.rectify_color_node]: Rectified topic '/camera_ur/image_rect' requested but camera publishing '/camera_ur/camera_info' is uncalibrated
-      - DEV_NAME=camera_ul && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME) --param frame_id:="${DEV_NAME}_frame_id"  --param camera_info_url:=file://$HOME/.ros/camera_info/$DEV_NAME.yaml --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
-      - DEV_NAME=camera_ur && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME) --param frame_id:="${DEV_NAME}_frame_id"  --param camera_info_url:=file://$HOME/.ros/camera_info/$DEV_NAME.yaml --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
-      - DEV_NAME=camera_ll && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME) --param frame_id:="${DEV_NAME}_frame_id"  --param camera_info_url:=file://$HOME/.ros/camera_info/$DEV_NAME.yaml --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
-      - DEV_NAME=camera_lr && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME) --param frame_id:="${DEV_NAME}_frame_id"  --param camera_info_url:=file://$HOME/.ros/camera_info/$DEV_NAME.yaml --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
+      - DEV_NAME=camera_ul && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME) --param frame_id:="${DEV_NAME}_frame_id"  --param camera_info_url:=file://$HOME/.ros/camera_info/$DEV_NAME.yaml --remap ros_namespace:=upper --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
+      - DEV_NAME=camera_ur && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME) --param frame_id:="${DEV_NAME}_frame_id"  --param camera_info_url:=file://$HOME/.ros/camera_info/$DEV_NAME.yaml --remap ros_namespace:=upper --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
+      - DEV_NAME=camera_ll && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME) --param frame_id:="${DEV_NAME}_frame_id"  --param camera_info_url:=file://$HOME/.ros/camera_info/$DEV_NAME.yaml --remap ros_namespace:=lower --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
+      - DEV_NAME=camera_lr && ros2 run usb_cam usb_cam_node_exe --ros-args  --param video_device:=/dev/$(readlink /dev/$DEV_NAME) --param frame_id:="${DEV_NAME}_frame_id"  --param camera_info_url:=file://$HOME/.ros/camera_info/$DEV_NAME.yaml --remap ros_namespace:=lower --remap __ns:=/$DEV_NAME --params-file $HOME/.ros/camera_info/general_params.yaml
       - ros2 run tf2_ros static_transform_publisher  0 0 4  0 1.5708 1.5708  camera_frame  test_child_frame_id
       - ros2 run tf2_ros static_transform_publisher  0 0 0.000 0.0 0.0 0.0  map  camera_frame # it is the left camera because that is from where the calibration data starts from (it is the right cameras matrices that require homogeneous transform)
       - ros2 run tf2_ros static_transform_publisher  0 0 0.025 0.0 0.0 0.0  camera_frame  top_camera_frame_id # it is the left camera because that is from where the calibration data starts from (it is the right cameras matrices that require homogeneous transform)
@@ -26,14 +27,14 @@ windows:
       - ros2 run tf2_ros static_transform_publisher  0 0.0 0.0  0 0.0 -0.000000  bot_camera_frame_id  camera_ll_frame_id
       - ros2 run tf2_ros static_transform_publisher  0 0.082 0.0  0 0.0 0.000000  camera_ll_frame_id  camera_lr_frame_id
       # http://wiki.ros.org/stereo_image_proc min_disparity:=0 prefilter_cap:=5 prefilter_size:=10 speckle_range:=31 speckle_size:=35 stereo_algorithm:=1 texture_threshold:=100 uniqueness_ratio:=10.0
-      - ros2 launch stereo_image_proc stereo_image_proc.launch.py left_namespace:=/camera_ul right_namespace:=/camera_ur approximate_sync:=True stereo_algorithm:=1
-      - ros2 launch stereo_image_proc stereo_image_proc.launch.py left_namespace:=/camera_ll right_namespace:=/camera_lr approximate_sync:=True stereo_algorithm:=1
+      - ros2 launch stereo_image_proc stereo_image_proc.launch.py left_namespace:=/camera_ul right_namespace:=/camera_ur approximate_sync:=True stereo_algorithm:=1 points2:=upper_points disparity:=upper_disparity disparity_node:=upper_disparity_node ros_namespace:=upper $DISPARITY_PARAMS
+      - ros2 launch stereo_image_proc stereo_image_proc.launch.py left_namespace:=/camera_ll right_namespace:=/camera_lr approximate_sync:=True stereo_algorithm:=1 points2:=lower_points disparity:=lower_disparity disparity_node:=lower_disparity_node ros_namespace:=lower $DISPARITY_PARAMS
       #- ros2 launch depth_image_proc stereo_image_proc.launch.py  approximate_sync:=True avoid_point_cloud_padding:=True
 #      - ros2 run stereo_image_proc disparity_node --ros-args --params-file $HOME/.ros/camera_info/disparity-params.yaml
 #      - ros2 run stereo_image_proc point_cloud_node  --ros-args --remap left/image_rect_color:=left/image_rect --param approximate_sync:=True --param approximate:=1.0 --param avoid_point_cloud_padding:=True
       - rviz2
       - sleep 2 & ros2 topic list
-      - ros2 topic echo --no-arr /camera_ll/image_raw
+      #- ros2 topic echo --no-arr /lower/camera_ll/image_raw
       - ros2 run rqt_reconfigure rqt_reconfigure
-      - ros2 run image_view disparity_view --ros-args --remap image:=/disparity --remap __ns:=/camera_ll
+      #- ros2 run image_view disparity_view --ros-args --remap image:=disparity --remap __ns:=/lower/camera_ll
       #- sleep 2 ; ros2 service call /camera_ur/set_camera_info sensor_msgs/srv/SetCameraInfo "camera_info:\^J\ \ header:\^J\ \ \ \ stamp:\^J\ \ \ \ \ \ sec:\ 0\^J\ \ \ \ \ \ nanosec:\ 0\^J\ \ \ \ frame_id:\ \'\'\^J\ \ height:\ 0\^J\ \ width:\ 0\^J\ \ distortion_model:\ \'\'\^J\ \ d:\ []\^J\ \ k:\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ r:\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ p:\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ -\ 0.0\^J\ \ binning_x:\ 0\^J\ \ binning_y:\ 0\^J\ \ roi:\^J\ \ \ \ x_offset:\ 0\^J\ \ \ \ y_offset:\ 0\^J\ \ \ \ height:\ 0\^J\ \ \ \ width:\ 0\^J\ \ \ \ do_rectify:\ false\"
