@@ -63,11 +63,8 @@ The results of this experiment are emperical since they are meant to determine f
 
 Here is a video showing the resulting point clouds. Yellow is the Lower stereo camera and White is the top stereo camera where the cameras are angled inwards.
 
-<figure class="video_container">
-  <video controls="true" allowfullscreen="true">
-    <source src="media/demo-pointcoud.webm" type="video/webm">
-  </video>
-</figure>
+
+![Watch the video](media/demo-pointcoud.webm)
 
 # Misc
 
