@@ -10,8 +10,7 @@ The cameras were attained via amazon and can be found at :
 - https://www.amazon.com/ELP-Megapixel-Distortion-Webcamera-Industrial/dp/B0BGH2LDMP
 
 The housing for the cameras is 3d printed and made on fusion 360.
-I'm embedding it in the README for fun.
-[STL](media/USB16MP01-parts.stl)
+- [Housing](media/USB16MP01-parts.stl)
 
 # Set Up
 
@@ -25,7 +24,10 @@ git clone git@github.com:1hada/custom-depth-camera.git --recurse-submodules
 mkdir -p ~/.tmuxp 
 mkdir -p ~/.ros/camera_info
 sudo mkdir -p /etc/udev/rules.d/ 
+
+# I use a USB hub dedicated to these cameras and define these rules to make it as easy as pie to know exactly which camera corresponds to left/right and upper/lower
 sudo cp .udev/99-usb-camera.rules /etc/udev/rules.d/99-usb-camera.rules
+
 cp .tmuxp/*  ~/.tmuxp/
 cp .camera_info/*  ~/.ros/camera_info/
 
@@ -61,7 +63,7 @@ The results of this experiment are emperical since they are meant to determine f
 
 Here is a video showing the resulting point clouds. Yellow is the Lower stereo camera and White is the top stereo camera where the cameras are angled inwards.
 
-[demo-pointcoud](media/demo-pointcoud.webm)
+![demo-pointcoud](media/demo-pointcoud.webm)
 
 # Misc
 
