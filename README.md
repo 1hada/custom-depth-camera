@@ -12,6 +12,11 @@ The cameras were attained via amazon and can be found at :
 The housing for the cameras is 3d printed and made on fusion 360.
 - [Housing](media/USB16MP01-parts.stl)
 
+NOTE :
+- I've decided to use tmuxp in honor of NASA's LAMP stack being launched like that (at time of writing). If you don't have tmuxp then I suggest you get it so that you don't have to open a slew of various terminals. Eventually a launch file could be made in lieu of the tmuxp config file... but then that may require building a package simply to launch.
+  - https://github.com/NeBula-Autonomy/LAMP/tree/6caea1b69f95b3288c6cdb2279cc96ac2f461bd3
+
+
 # Set Up
 
 ### Get the repo
