@@ -26,6 +26,7 @@ mkdir -p ~/.ros/camera_info
 sudo mkdir -p /etc/udev/rules.d/ 
 
 # I use a USB hub dedicated to these cameras and define these rules to make it as easy as pie to know exactly which camera corresponds to left/right and upper/lower
+# NOTE : if the symlinks to the /dev/camera_* devices is not pointed toward the video devices then the vl42 package will not be able to run the camera. This can be resolvved by running `sudo udevadm control --reload-rules & sudo udevadm trigger `
 sudo cp .udev/99-usb-camera.rules /etc/udev/rules.d/99-usb-camera.rules
 
 cp .tmuxp/*  ~/.tmuxp/
