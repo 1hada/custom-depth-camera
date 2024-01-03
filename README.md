@@ -21,11 +21,14 @@ NOTE :
 
 ### Get the repo
 ```
+cd ~/workspace
 git clone git@github.com:1hada/custom-depth-camera.git --recurse-submodules
 ```
 
 ### Environment Configurations
 ```
+cd ~/workspace/custom-depth-camera
+
 mkdir -p ~/.tmuxp 
 mkdir -p ~/.ros/camera_info
 sudo mkdir -p /etc/udev/rules.d/ 
@@ -38,6 +41,8 @@ cp .tmuxp/*  ~/.tmuxp/
 cp .camera_info/*  ~/.ros/camera_info/
 
 source /opt/ros/humble/setup.bash
+cd ~/workspace/custom-depth-camera
+colcon build
 ```
 
 
@@ -71,23 +76,4 @@ Here is a video showing the resulting point clouds. Yellow is the Lower stereo c
 
 
 ![Watch the video](media/demo-pointcoud.webm)
-
-# Misc
-
-get the image pipeline to better get the calibration for a monocular camera
-`sudo apt install ros-humble-image-pipeline `
-OR
-
-https://navigation.ros.org/tutorials/docs/camera_calibration.html
-```
-source /opt/ros/humble/setup.bash 
-colcon build --symlink-install
-sudo apt install ros-humble-camera-calibration-parsers
-sudo apt install ros-humble-camera-info-manager
-sudo apt install ros-humble-launch-testing-ament-cmake
-
-cd src
-git clone -b humble git@github.com:ros-perception/image_pipeline.git
-
-```
 
